@@ -1,0 +1,17 @@
+services:
+  todolist:
+    container_name: todolist_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: todolist:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    networks:
+      - backend
+    restart: always
+
+networks:
+  backend:
