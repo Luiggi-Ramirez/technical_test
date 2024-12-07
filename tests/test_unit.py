@@ -1,9 +1,15 @@
 import pytest
-import requests
+from fastapi.testclient import TestClient
+from todo_list.main import app
 
 
 class TestUnitTodoList:
-    BASE_URL = "http://127.0.0.1:8000"
+    client = TestClient(app)
+    tasks = [
+        {"id": 1, "title": "tarea 1", "description": "tarea 1", "completed": False},
+        {"id": 2, "title": "tarea 2", "description": "tarea 2", "completed": False},
+        {"id": 3, "title": "tarea 3", "description": "tarea 3", "completed": False},
+    ]
 
     @pytest.mark.unit
     def test_create_task(self):
@@ -13,7 +19,7 @@ class TestUnitTodoList:
             "description": "tarea 4",
             "completed": False,
         }
-        response = requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
+        response = self.client.post(url="/tasks/", json=payload)
         # se testea el codigo de la response
         assert response.status_code == 201
 
@@ -25,26 +31,26 @@ class TestUnitTodoList:
             "description": "tarea 4",
             "completed": False,
         }
-        requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
-        response_2 = requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
+        self.client.post(url="/tasks/", json=payload)
+        response_2 = self.client.post(url="/tasks/", json=payload)
         # se testea la respuesta en la creacion
         assert response_2.status_code == 400
 
     @pytest.mark.unit
     def test_get_tasks(self):
-        response = requests.get(url=f"{self.BASE_URL}/tasks/")
+        response = self.client.get(url="/tasks/")
         # se testea la respuesta al obtener la data
         assert response.status_code == 200
 
     @pytest.mark.unit
     def test_get_task(self):
-        response = requests.get(url=f"{self.BASE_URL}/tasks/2/")
+        response = self.client.get(url="/tasks/2/")
         # se testea la respuesta al obtener la data
         assert response.status_code == 200
 
     @pytest.mark.unit
     def test_task_not_found(self):
-        response = requests.get(url=f"{self.BASE_URL}/tasks/100/")
+        response = self.client.get(url="/tasks/100/")
         # se testea la respuesta al obtener la data
         assert response.status_code == 404
 
@@ -56,13 +62,13 @@ class TestUnitTodoList:
             "description": "Tarea 1",
             "completed": True,
         }
-        response = requests.put(url=f"{self.BASE_URL}/tasks/1/", json=payload)
+        response = self.client.put(url="/tasks/1/", json=payload)
         # se testea si la actualizacion fue exitosa
         assert response.status_code == 200
 
     @pytest.mark.unit
     def test_delete_task_success(self):
-        response = requests.delete(url=f"{self.BASE_URL}/tasks/3/")
+        response = self.client.delete(url="/tasks/3/")
         # se testea si la eliminacion fue exitosa
         assert response.status_code == 204
         assert response.text == ""
@@ -70,5 +76,5 @@ class TestUnitTodoList:
     @pytest.mark.unit
     def test_delete_task_not_found(self):
         # se testea que la data ya no exista
-        response = requests.get(url=f"{self.BASE_URL}/tasks/3/")
+        response = self.client.get(url="/tasks/3/")
         assert response.status_code == 404

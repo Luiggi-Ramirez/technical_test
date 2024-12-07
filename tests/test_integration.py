@@ -1,9 +1,15 @@
 import pytest
-import requests
+from fastapi.testclient import TestClient
+from todo_list.main import app
 
 
 class TestIntegrationTodoList:
-    BASE_URL = "http://127.0.0.1:8000"
+    client = TestClient(app)
+    tasks = [
+        {"id": 1, "title": "tarea 1", "description": "tarea 1", "completed": False},
+        {"id": 2, "title": "tarea 2", "description": "tarea 2", "completed": False},
+        {"id": 3, "title": "tarea 3", "description": "tarea 3", "completed": False},
+    ]
 
     @pytest.mark.integration
     def test_create_task(self):
@@ -14,7 +20,7 @@ class TestIntegrationTodoList:
             "completed": False,
         }
         # se crea el recurso
-        response = requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
+        response = self.client.post(url="/tasks/", json=payload)
         data = response.json()
         # se testea que la creacion del recurso sea corrrecta
         assert response.status_code == 201
@@ -24,15 +30,15 @@ class TestIntegrationTodoList:
         assert data["description"] == "tarea 5"
         assert data["completed"] is False
         # se testea que no se añada data con id repetido
-        response_2 = requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
+        response_2 = self.client.post(url="/tasks/", json=payload)
         assert response_2.status_code == 400
         # se testea que la task se haya añadidio a la lista
-        response = requests.get(url=f"{self.BASE_URL}/tasks/5/")
+        response = self.client.get(url="/tasks/5/")
         assert response.status_code == 200
 
     @pytest.mark.integration
     def test_get_tasks(self):
-        response = requests.get(url=f"{self.BASE_URL}/tasks/")
+        response = self.client.get(url="/tasks/")
         assert response.status_code == 200
         data = response.json()
         # se testea si la respuesta es una instancia de tipo list
@@ -49,9 +55,9 @@ class TestIntegrationTodoList:
             "completed": False,
         }
         # creamos una nueva task
-        response = requests.post(url=f"{self.BASE_URL}/tasks/", json=payload)
+        response = self.client.post(url="/tasks/", json=payload)
         # obtenemos la task
-        response = requests.get(url=f"{self.BASE_URL}/tasks/6/")
+        response = self.client.get(url="/tasks/6/")
         # se testea que la data existe
         assert response.status_code == 200
         data = response.json()
@@ -61,7 +67,7 @@ class TestIntegrationTodoList:
         assert data["description"] == "tarea 6"
         assert data["completed"] is False
         # se testea la busqueda de una task quw no existe
-        response = requests.get(url=f"{self.BASE_URL}/tasks/20/")
+        response = self.client.get(url="/tasks/20/")
         assert response.status_code == 404
 
     @pytest.mark.integration
@@ -73,7 +79,7 @@ class TestIntegrationTodoList:
             "completed": True,
         }
         # actualizamos un recurso existente
-        response = requests.put(url=f"{self.BASE_URL}/tasks/1/", json=payload)
+        response = self.client.put(url="/tasks/1/", json=payload)
         data = response.json()
         # se testea que la actualización sea exitosa
         assert response.status_code == 200
@@ -83,22 +89,22 @@ class TestIntegrationTodoList:
         assert data["description"] == "tarea 1"
         assert data["completed"] is True
         # se obtiene el recurso
-        response_get = requests.get(url=f"{self.BASE_URL}/tasks/1/")
+        response_get = self.client.get(url="/tasks/1/")
         data_get = response_get.json()
         # se testea que el cambio se haya aplicado en el recurso
         assert data_get["completed"] is True
         # actualizamos un recurso inexistente
-        response = requests.put(url=f"{self.BASE_URL}/tasks/100/", json=payload)
+        response = self.client.put(url="/tasks/100/", json=payload)
         # se testea que la actualización falle por no encontrar el recurso
         assert response.status_code == 404
 
     @pytest.mark.integration
     def test_delete_task(self):
         # eliminamos el recurso
-        response = requests.delete(url=f"{self.BASE_URL}/tasks/5/")
+        response = self.client.delete(url="/tasks/5/")
         # verificamos que la eliminación a sido correcta
         assert response.status_code == 204
         assert response.text == ""
         # verificamos que el recurso ya no se encuentra
-        response = requests.get(url=f"{self.BASE_URL}/tasks/5/")
+        response = self.client.get(url="/tasks/5/")
         assert response.status_code == 404
